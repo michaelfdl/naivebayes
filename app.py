@@ -11,14 +11,6 @@ st.set_page_config(page_title="Sentiment Evaluation", layout="wide")
 st.title("Sentiment Analysis - TextBlob Labeling and Naive Bayes Evaluation")
 
 
-def pick_default(options, candidates, fallback_index=0):
-    lower_map = {c.lower(): c for c in options}
-    for cand in candidates:
-        if cand.lower() in lower_map:
-            return lower_map[cand.lower()]
-    return options[min(fallback_index, len(options) - 1)]
-
-
 def plot_confusion_matrix_annotated(cf_matrix, title="Confusion Matrix (Annotated)"):
     cf = np.array(cf_matrix)
 
@@ -96,7 +88,16 @@ def plot_pie_score(df: pd.DataFrame, label_col: str = "Score"):
     return fig
 
 
-uploaded = st.file_uploader("Upload dataset (CSV)", type=["csv"])
+def auto_pick_text_col(columns):
+    candidates = ["Clean Tweet"]
+    lower_map = {c.lower(): c for c in columns}
+    for cand in candidates:
+        if cand.lower() in lower_map:
+            return lower_map[cand.lower()]
+    return None
+
+
+uploaded = st.file_uploader("Upload dataset (CSV) dan pastikan kolom bernama Clean Tweet", type=["csv"])
 if not uploaded:
     st.info("Silakan upload file CSV terlebih dahulu.")
     st.stop()
@@ -108,9 +109,11 @@ st.subheader("Preview Data")
 st.write("Kolom yang terbaca:", list(df.columns))
 st.dataframe(df.head(10), use_container_width=True)
 
-cols = list(df.columns)
-default_text = pick_default(cols, ["Clean Tweet", "clean_tweet", "tweet", "text", "content"], 0)
-text_col = st.selectbox("Pilih kolom teks (tweet)", options=cols, index=cols.index(default_text))
+text_col = auto_pick_text_col(list(df.columns))
+if text_col is None:
+    st.error("Kolom teks tidak ditemukan otomatis. Pastikan ada kolom seperti: Clean Tweet.")
+    st.write("Kolom yang tersedia:", list(df.columns))
+    st.stop()
 
 st.divider()
 
@@ -148,18 +151,12 @@ st.divider()
 
 st.subheader("Naive Bayes Evaluation (TF-IDF + SMOTE)")
 
-use_textblob_score = st.checkbox("Gunakan label Score hasil TextBlob", value=True)
+if "df_tb" not in st.session_state:
+    st.warning("Silakan jalankan proses TextBlob terlebih dahulu agar label Score tersedia.")
+    st.stop()
 
-if use_textblob_score:
-    if "df_tb" not in st.session_state:
-        st.warning("Silakan jalankan proses TextBlob terlebih dahulu agar label Score tersedia.")
-        st.stop()
-    model_df = st.session_state["df_tb"]
-    label_col = "Score"
-else:
-    default_label = pick_default(cols, ["Score", "label", "sentiment", "polarity", "target"], 0)
-    label_col = st.selectbox("Pilih kolom label (sentiment/score)", options=cols, index=cols.index(default_label))
-    model_df = df
+model_df = st.session_state["df_tb"]
+label_col = "Score"
 
 test_size = st.selectbox("Pilih test_size", options=[0.1, 0.2, 0.3], index=0)
 

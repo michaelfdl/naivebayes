@@ -45,21 +45,17 @@ def train_and_evaluate(
     y_pred = nb.predict(tfidf_test)
     cf_matrix = confusion_matrix(y_test, y_pred)
 
-    report_dict = classification_report(
-        y_test, y_pred
-    )
     report_text = classification_report(
-        y_test, y_pred
+        y_test, y_pred,
+        zero_division=0
     )
 
     return {
         "model": nb,
         "vectorizer": tfidf_vectorizer,
         "cf_matrix": cf_matrix,
-        "report_dict": report_dict,
         "report_text": report_text,
         "y_test": y_test,
         "y_pred": y_pred,
-        "classes": sorted(work[label_col].unique().tolist()),
         "test_size": float(test_size),
     }
