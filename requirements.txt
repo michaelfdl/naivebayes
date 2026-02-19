@@ -5,5 +5,7 @@ scikit-learn
 matplotlib
 seaborn
 nltk
+textblob
 sastrawi
 imbalanced-learn
+joblib
